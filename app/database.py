@@ -2,25 +2,21 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# 1. Explicitly look for the Vercel Environment Variable
-# Use os.getenv to safely check if the cloud URL exists
-raw_url = os.getenv("DATABASE_URL")
+# 1. Force retrieval of the Vercel Environment Variable
+# We use os.environ to ensure it raises an error if the key is missing
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if raw_url and "127.0.0.1" not in raw_url:
-    # Essential Fix: Neon and Vercel often provide 'postgres://' 
-    # but SQLAlchemy 2.0+ requires 'postgresql+psycopg://'
-    if raw_url.startswith("postgres://"):
-        DATABASE_URL = raw_url.replace("postgres://", "postgresql+psycopg://", 1)
-    elif raw_url.startswith("postgresql://"):
-        DATABASE_URL = raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
-    else:
-        DATABASE_URL = raw_url
+# 2. Critical Fix: Inject the required driver for SQLAlchemy 2.0+
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 else:
-    # 2. Local fallback for your Dell Laptop (Offline development)
-    # This ONLY runs if DATABASE_URL is missing or contains '127.0.0.1'
+    # 3. Only if the variable is missing completely (for local testing)
     DATABASE_URL = "postgresql+psycopg://postgres:Antor789@localhost:5432/garment_db"
 
-# engine_kwargs can be used to handle pooled connections if needed later
+# Create the engine with the cloud-ready URL
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
