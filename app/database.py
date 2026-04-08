@@ -1,14 +1,20 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Updated with your specific password and the psycopg3 driver
-SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://postgres:Antor789@localhost:5432/garment_db"
+# Grabs the Neon URL from Vercel, or uses your local Dell DB if offline
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:Antor789@localhost:5432/garment_db")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Professional Fix: Ensures the driver is explicitly 'psycopg' for Neon/Vercel
+if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+elif DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Dependency to get a database session
 def get_db():
     db = SessionLocal()
     try:
