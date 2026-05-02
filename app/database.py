@@ -3,20 +3,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
-# Load variables from the .env file
+# 1. Load local .env (Vercel will ignore this safely)
 load_dotenv()
 
-# 1. Try to get the full Cloud Connection String (Vercel/Neon)
+# 2. Try to get the Cloud Connection String from Vercel Settings
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URL:
-    # Essential Fix: Inject psycopg driver for SQLAlchemy 2.0 compatibility
+if DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
+    # Essential Fix: SQLAlchemy 2.0.30 requires 'postgresql+psycopg://'
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
     elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 else:
-    # 2. Build the Local fallback using separate confidential keys
+    # 3. Fallback for your Dell Laptop using separate confidential keys
     db_user = os.getenv("DB_USER", "postgres")
     db_pass = os.getenv("DB_PASSWORD", "Antor789")
     db_host = os.getenv("DB_HOST", "localhost")
