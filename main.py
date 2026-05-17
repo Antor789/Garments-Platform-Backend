@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # <-- IMPORTED CORS MIDDLEWARE
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.database import engine, Base
 from app.api import auth, designs 
@@ -18,22 +18,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ----------------- CORS CONFIGURATION -----------------
-# Define the origins (frontends) that are allowed to access this API
-origins = [
-    "http://localhost:3000",  # Your local Next.js frontend running on your Dell laptop
-    # Once you deploy your frontend, add its production URL here, e.g.:
-    # "https://your-garments-frontend.vercel.app"
-]
-
+# ----------------- WILDCARD CORS CONFIGURATION -----------------
+# Setting allow_origins to ["*"] opens the API to the entire internet
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,            # Grants access to listed domains
-    allow_credentials=True,           # Allows passing cookies/credentials if needed
-    allow_methods=["*"],              # Allows all standard HTTP methods: POST, GET, OPTIONS, etc.
-    allow_headers=["*"],              # Allows all custom/standard headers
+    allow_origins=["*"],             # ALLOW ALL: Any domain can fetch from this API
+    allow_credentials=True,          # Note: Browsers ignore this if origins is "*"
+    allow_methods=["*"],             # ALLOW ALL: POST, GET, PUT, DELETE, OPTIONS, etc.
+    allow_headers=["*"],             # ALLOW ALL: Content-Type, Authorization, etc.
 )
-# ------------------------------------------------------
+# ---------------------------------------------------------------
 
 # Authentication Router
 app.include_router(auth.router)
