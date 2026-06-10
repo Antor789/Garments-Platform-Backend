@@ -18,7 +18,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ----------------- WILDCARD CORS CONFIGURATION -----------------
+
 # Setting allow_origins to ["*"] opens the API to the entire internet
 app.add_middleware(
     CORSMiddleware,
