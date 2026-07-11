@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from pydantic import EmailStr
 
 from app.database import get_db
 from app.schemas.user import UserCreate, UserResponse, Token
@@ -9,6 +10,24 @@ from app.services.auth_service import AuthService
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+# Corrected custom form wrapper
+class OAuth2EmailRequestForm:
+    def __init__(
+        self,
+        username: EmailStr = Form(),  # Use Form() instead of Depends() here
+        password: str = Form(),
+        grant_type: str = Form(default=None),
+        scope: str = Form(default=""),
+        client_id: str = Form(default=None),
+        client_secret: str = Form(default=None),
+    ):
+        self.username = username
+        self.password = password
+        self.grant_type = grant_type
+        self.scope = scope
+        self.client_id = client_id
+        self.client_secret = client_secret
 
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
@@ -37,14 +56,12 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@router.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Swagger puts the email into 'form_data.username'
-    # We must filter by 'User.email' in our PostgreSQL table
+@router.post("/login", response_model=Token)
+def login(form_data: OAuth2EmailRequestForm = Depends(), db: Session = Depends(get_db)):
+    # Resolves mapping mismatch by matching the text parameter to your PostgreSQL User.email table column
     user = db.query(User).filter(User.email == form_data.username).first()
     
     if not user or not AuthService.verify_password(form_data.password, user.hashed_password):
-        # Professional tip: Use this specific exception for Swagger to react correctly
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -60,9 +77,9 @@ def get_onboarding_progress(current_user: User = Depends(get_current_user)):
     Returns the percentage for the '75% Complete' bar in the Smart Garments UI.
     """
     steps = [
-        {"name": "Verify Email", "completed": current_user.is_email_verified},
+        {"name": "Verify Email", "completed": getattr(current_user, "is_email_verified", False)},
         {"name": "Complete Profile", "completed": bool(current_user.full_name)},
-        {"name": "Verify Phone", "completed": current_user.is_phone_verified},
+        {"name": "Verify Phone", "completed": getattr(current_user, "is_phone_verified", False)},
         {"name": "Set Up Payment", "completed": False} 
     ]
     

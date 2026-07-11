@@ -1,33 +1,25 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-    role: str  # "buyer" or "factory"
-    
-    # --- ADD THESE TO MATCH YOUR NEW DB COLUMNS ---
-    full_name: Optional[str] = None
+    email: EmailStr  # Enforces valid formatting (e.g., must contain '@' and a domain suffix)
+    password: str = Field(..., min_length=6, description="Password must be at least 6 characters long")
+    role: str = "buyer"
+    full_name: str = Field(..., min_length=1, description="Full name field cannot be blank")
     phone_number: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
     role: str
-    full_name: Optional[str]
-    phone_number: Optional[str]
-    is_active: bool
+    full_name: str
+    phone_number: Optional[str] = None
+    is_email_verified: bool = False
+    is_phone_verified: bool = False
 
     class Config:
         from_attributes = True
 
-
 class Token(BaseModel):
-    """Schema for the Bearer Token response"""
     access_token: str
     token_type: str
-
-
-class TokenData(BaseModel):
-    """Schema for the data stored inside the JWT (usually the email)"""
-    email: Optional[str] = None

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from app.database import engine, Base
 from app.api import auth, designs 
 from app.models import user, design
+from app.api import auth, designs, dashboard # <-- Include new dashboard module
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +35,9 @@ app.include_router(auth.router)
 
 # Designs Router (Visible in Swagger UI)
 app.include_router(designs.router)
+
+# Dashboard Router
+app.include_router(dashboard.router)
 
 @app.get("/")
 def health_check():
